@@ -1,0 +1,36 @@
+@import './_colors.scss';
+
+.social-links {
+    margin: 40px 0;
+    text-align: center;
+    padding: 0;
+
+    li {
+        display: inline-block;
+        margin-right: 35px;
+        opacity: 0.3;
+        transition: opacity 0.15s ease-out;
+
+        &:last-child {
+            margin-right: 0px;
+        }
+
+        img {
+            height: 40px;
+            width: 40px;
+        }
+
+
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .social-links {
+        li {
+            margin-right: 16px;
+        }
+    }
+}

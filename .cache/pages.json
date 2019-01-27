@@ -1,0 +1,58 @@
+[
+    {
+        "componentChunkName": "component---cache-dev-404-page-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "dev-404-page.json",
+        "path": "/dev-404-page/"
+    },
+    {
+        "componentChunkName": "component---src-pages-404-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "404.json",
+        "path": "/404/"
+    },
+    {
+        "componentChunkName": "component---src-pages-articles-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "articles.json",
+        "path": "/articles/"
+    },
+    {
+        "componentChunkName": "component---src-pages-experience-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "experience.json",
+        "path": "/experience/"
+    },
+    {
+        "componentChunkName": "component---src-pages-index-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "index.json",
+        "path": "/"
+    },
+    {
+        "componentChunkName": "component---src-pages-talks-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "talks.json",
+        "path": "/talks/"
+    },
+    {
+        "componentChunkName": "component---src-pages-work-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "work.json",
+        "path": "/work/"
+    },
+    {
+        "componentChunkName": "component---src-pages-404-js",
+        "layout": "layout---index",
+        "layoutComponentChunkName": "component---src-layouts-index-js",
+        "jsonName": "404-html.json",
+        "path": "/404.html"
+    }
+]

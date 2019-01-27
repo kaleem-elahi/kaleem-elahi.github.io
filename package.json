@@ -1,0 +1,29 @@
+{
+  "name": "personal-website",
+  "private": true,
+  "dependencies": {
+    "gatsby": "^1.9.247",
+    "gatsby-link": "^1.6.40",
+    "gatsby-plugin-google-analytics": "^1.0.31",
+    "gatsby-plugin-google-fonts": "0.0.4",
+    "gatsby-plugin-react-helmet": "^2.0.10",
+    "gatsby-plugin-sass": "^1.0.26",
+    "gatsby-plugin-sitemap": "^1.2.22",
+    "react-favicon": "0.0.14",
+    "react-helmet": "^5.2.0",
+    "react-youtube": "^7.6.0"
+  },
+  "keywords": [
+    "gatsby"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "format": "prettier --write 'src/**/*.js'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "prettier": "^1.12.0"
+  }
+}

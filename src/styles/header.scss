@@ -1,0 +1,35 @@
+@import './_colors.scss';
+
+.nav {
+    background: $white;
+
+    .nav-list {
+        margin: 0 auto;
+        width: 600px;
+        height: 150px;
+        
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+    }
+
+    .nav-item {
+        color: $light-grey;
+        text-decoration: none;
+        transition: 0.3s ease-out;
+
+        &:hover {
+            color: $black;
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .nav {
+        height: 40px;
+
+        .nav-list, .nav-item {
+            display: none;
+        }
+    }
+}

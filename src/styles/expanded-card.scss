@@ -1,0 +1,43 @@
+@import './_colors.scss';
+
+.expanded-card {
+    overflow: hidden;
+
+    .youtube-player {
+        width: 640px;
+        height: 360px;
+        margin: 30px 0;
+    }
+
+    .link {
+        text-decoration: none;
+        color: $purple;
+        display: block;
+        margin: 20px 0;
+    }
+
+    .description {
+        strong {
+            margin: 0 3px;
+        }
+
+        a {
+            color: $teal;
+            text-decoration: none;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .expanded-card {
+        .youtube-player {
+            margin: 30px auto;
+            width: 80vw;
+            height: calc(80vw * 9 / 16);
+        }
+    }
+}

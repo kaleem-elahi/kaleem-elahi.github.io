@@ -1,0 +1,34 @@
+@import './_colors.scss';
+
+.section {
+    color: $dark-grey;
+    overflow-x: hidden;
+
+    &.section-inverted {
+        background-color: $purple;
+        margin-top: 100px;
+        padding-bottom: 100px;
+
+        color: $white;
+
+        .heading {
+            color: $white;
+        }
+    }
+
+    .heading {
+        color: $black;
+        font-size: 2.24em;
+        margin-bottom: 50px;
+    }
+}
+
+
+@media screen and (max-width: 768px) {
+    .section {
+        &.section-inverted {
+            margin: 0;
+            padding-bottom: 50px;
+        }
+    }
+}
