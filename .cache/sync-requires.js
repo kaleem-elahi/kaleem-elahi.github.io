@@ -7,7 +7,6 @@ exports.layouts = {
 }
 
 exports.components = {
-  "component---cache-dev-404-page-js": preferDefault(require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/dev-404-page.js")),
   "component---src-pages-404-js": preferDefault(require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/src/pages/404.js")),
   "component---src-pages-articles-js": preferDefault(require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/src/pages/articles.js")),
   "component---src-pages-experience-js": preferDefault(require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/src/pages/experience.js")),
@@ -18,7 +17,6 @@ exports.components = {
 
 exports.json = {
   "layout-index.json": require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/layout-index.json"),
-  "dev-404-page.json": require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/dev-404-page.json"),
   "404.json": require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/404.json"),
   "articles.json": require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/articles.json"),
   "experience.json": require("/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/experience.json"),

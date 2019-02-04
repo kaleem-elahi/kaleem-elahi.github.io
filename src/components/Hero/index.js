@@ -11,6 +11,7 @@ import medium from '../../images/social/medium.svg';
 import linkedin from '../../images/social/linkedin.svg';
 import email from '../../images/social/email.svg';
 
+const techs = ['React', 'Redux', 'jQuery', 'Firebase', 'Javscript', 'Php', 'UI/UX-Design', 'CSS3', 'HTML5', 'Next.js', 'Gatsby', 'Photoshop', 'React-Native(beginner)'];
 const links = [
     {
         href: 'https://github.com/kaleem-elahi',
@@ -42,16 +43,31 @@ const links = [
 const Hero = () => (
     <div className="hero">
         <div className="container">
-            <h1 className="t-bold t-mtb-15">
+            <div className="img-bg"></div>
+
+            <h1 className="t-bold t-mtb-15 font-header">
                 Hey! 👋 I'm Kaleem Elahi
             </h1>
             <h2 className="t-regular t-mtb-15">
-                <span className="color-light">
+                <span className="color-light dev-line">
                     Front-end Engineer |
                     Freelancer 
                     | UI/UX Developer
                 </span>
             </h2>
+            <h4 className="t-regular t-mtb-15">
+         
+            <br/>
+            <div className="center-skills">
+            {
+                techs.map(tech => (
+
+                    <span className="tag-skills">{tech}</span>
+                    ))
+                }
+            </div>
+
+            </h4>
 
             <CTA type="primary" inline external to="https://github.com/kaleem-elahi/kaleem-elahi.github.io/files/2800404/Kaleem.s.Resume.7.pdf" title="Resume">
                 My Resume

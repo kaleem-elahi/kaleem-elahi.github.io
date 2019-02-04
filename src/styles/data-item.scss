@@ -1,5 +1,66 @@
 @import './_colors.scss';
 
+@media screen and (max-width: 600px) {
+
+    .center-skills {
+        width: 100%!important;
+    }
+    
+    .font-header {
+        font-size: 24px;
+    }
+}
+
+.dev-line {
+    // background: #FFC107;
+    /* color: #ffffff; */
+    padding: 4px 10px;
+    border-radius: 50px;
+    /* border: 1px solid #dadada; */
+    white-space: nowrap;
+    font-size: 12px;
+    margin: auto;
+}
+
+span.tag-skills {
+    background: #e0e0e0;
+    color: #525252;
+    border-radius: 4px;
+    font-weight: 600;
+    padding: 2px 11px;
+    box-shadow: 0px 3px 3px -2px grey;
+    font-size: 15px;
+    /* width: 65px; */
+    /* position: absolute; */
+    margin: 7px 2px;
+    /* align-items: center; */
+    /* justify-content: center; */
+    /* display: flex; */
+}
+
+.center-skills {
+    display: flex;
+    flex-wrap: wrap;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    width: 50%;
+    margin: auto;
+}
+
+.img-bg {
+    height: 117px;
+    width: 117px;
+    background: url('./../images/kaleem-elahi.png')  134px 142px /162%;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    margin: auto;
+    border-radius: 90px;
+    border: 9px #ffffff6e solid;
+    box-shadow: 0px 0px 10px 7px #f1f1f1;
+}
+
 .color-light {
     color: grey
 }

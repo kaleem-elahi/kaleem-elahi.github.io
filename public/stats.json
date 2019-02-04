@@ -1,0 +1,72 @@
+{
+  "assetsByChunkName": {
+    "component---src-pages-work-js": [
+      "component---src-pages-work-js-b6615248caa233480047.js",
+      "component---src-pages-work-js-b6615248caa233480047.js.map"
+    ],
+    "path---work": [
+      "path---work-a0e39f21c11f6a62c5ab.js",
+      "path---work-a0e39f21c11f6a62c5ab.js.map"
+    ],
+    "component---src-pages-index-js": [
+      "component---src-pages-index-js-826e27db49068aa03235.js",
+      "component---src-pages-index-js-826e27db49068aa03235.js.map"
+    ],
+    "component---src-pages-experience-js": [
+      "component---src-pages-experience-js-884c40a278feb6d29b98.js",
+      "component---src-pages-experience-js-884c40a278feb6d29b98.js.map"
+    ],
+    "path---articles": [
+      "path---articles-a0e39f21c11f6a62c5ab.js",
+      "path---articles-a0e39f21c11f6a62c5ab.js.map"
+    ],
+    "path---experience": [
+      "path---experience-a0e39f21c11f6a62c5ab.js",
+      "path---experience-a0e39f21c11f6a62c5ab.js.map"
+    ],
+    "path---": [
+      "path----557518bd178906f8d58a.js",
+      "path----557518bd178906f8d58a.js.map"
+    ],
+    "component---src-layouts-index-js": [
+      "component---src-layouts-index-js-5dd4cd0c2bfbae1b4beb.js",
+      "component---src-layouts-index-js-5dd4cd0c2bfbae1b4beb.js.map"
+    ],
+    "path---index": [
+      "path---index-a0e39f21c11f6a62c5ab.js",
+      "path---index-a0e39f21c11f6a62c5ab.js.map"
+    ],
+    "component---src-pages-404-js": [
+      "component---src-pages-404-js-2062838cd14155cd7882.js",
+      "component---src-pages-404-js-2062838cd14155cd7882.js.map"
+    ],
+    "commons": [
+      "commons-38e519bc0e7d1d6b6126.js",
+      "commons-38e519bc0e7d1d6b6126.js.map"
+    ],
+    "component---src-pages-articles-js": [
+      "component---src-pages-articles-js-6b34a4ae5dafdd5c0dd4.js",
+      "component---src-pages-articles-js-6b34a4ae5dafdd5c0dd4.js.map"
+    ],
+    "path---404-html": [
+      "path---404-html-a0e39f21c11f6a62c5ab.js",
+      "path---404-html-a0e39f21c11f6a62c5ab.js.map"
+    ],
+    "path---talks": [
+      "path---talks-a0e39f21c11f6a62c5ab.js",
+      "path---talks-a0e39f21c11f6a62c5ab.js.map"
+    ],
+    "component---src-pages-talks-js": [
+      "component---src-pages-talks-js-858ca42e3e038a0138ff.js",
+      "component---src-pages-talks-js-858ca42e3e038a0138ff.js.map"
+    ],
+    "app": [
+      "app-2b499392a8e68144ef72.js",
+      "app-2b499392a8e68144ef72.js.map"
+    ],
+    "path---404": [
+      "path---404-a0e39f21c11f6a62c5ab.js",
+      "path---404-a0e39f21c11f6a62c5ab.js.map"
+    ]
+  }
+}
