@@ -1,4 +1,6 @@
 @import './_colors.scss';
+@import url('http://fonts.googleapis.com/css?family=Zeyada');
+@import url('http://fonts.googleapis.com/css?family=Questrial');
 
 @media screen and (max-width: 600px) {
 
@@ -7,8 +9,13 @@
     }
     
     .font-header {
-        font-size: 31px;
+        font-size: 52px!important;
     }
+}
+
+.font-header {
+    font-size: 76px;
+    font-family: 'Zeyada',
 }
 
 .dev-line {
@@ -51,14 +58,11 @@ span.tag-skills {
 .img-bg {
     height: 117px;
     width: 117px;
-    background: url('./../images/kaleem-elahi.png')  134px 142px /162%;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    margin: auto;
+    background: url('./../images/kaleem-elahi.png')  163px 177px/172%;
     border-radius: 90px;
-    border: 9px #ffffff6e solid;
-    box-shadow: 0px 0px 10px 7px #f1f1f1;
+    border: 1px dashed #ececec;
+    box-shadow: 0px 0px 0px 7px #ececec;
+    margin: auto;
 }
 
 .color-light {

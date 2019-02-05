@@ -4,5 +4,5 @@ set -e
 
 echo '🚀  Deploying to production!'
 cd ./deployment
-git push deployment master
+git push origin master
 cd ..

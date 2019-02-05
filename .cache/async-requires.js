@@ -2,6 +2,7 @@
 const preferDefault = m => m && m.default || m
 
 exports.components = {
+  "component---cache-dev-404-page-js": require("gatsby-module-loader?name=component---cache-dev-404-page-js!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/dev-404-page.js"),
   "component---src-pages-404-js": require("gatsby-module-loader?name=component---src-pages-404-js!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/src/pages/404.js"),
   "component---src-pages-articles-js": require("gatsby-module-loader?name=component---src-pages-articles-js!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/src/pages/articles.js"),
   "component---src-pages-experience-js": require("gatsby-module-loader?name=component---src-pages-experience-js!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/src/pages/experience.js"),
@@ -12,6 +13,7 @@ exports.components = {
 
 exports.json = {
   "layout-index.json": require("gatsby-module-loader?name=path---!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/layout-index.json"),
+  "dev-404-page.json": require("gatsby-module-loader?name=path---dev-404-page!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/dev-404-page.json"),
   "404.json": require("gatsby-module-loader?name=path---404!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/404.json"),
   "articles.json": require("gatsby-module-loader?name=path---articles!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/articles.json"),
   "experience.json": require("gatsby-module-loader?name=path---experience!/Users/kaleemelahi/workspace/kaleem-elahi.github.io/.cache/json/experience.json"),

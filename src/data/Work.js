@@ -1,10 +1,10 @@
 export default [
     {
         id: 5,
-        heading: "Imaginer",
-        subHeadings: ["Create and download custom sized images"],
-        description: `<p>Application to create and download custom sized images of varying colors and formats. Useful when you need image(s) of a specific size and format during development.</p>`,
-        projectLink: "https://imaginer.netlify.com/",
+        heading: "Team 8 Solutions",
+        subHeadings: ["Made with Webflow"],
+        description: `<p>Designed with Mobile responsive.</p>`,
+        projectLink: "https://www.team8solutions.com/",
         main: "projectLink",
     },
     {

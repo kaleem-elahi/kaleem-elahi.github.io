@@ -1,20 +1,20 @@
 export const siteMeta = {
     title: 'Kaleem Elahi | Front-end Engineer',
-    favicon: 'https://user-images.githubusercontent.com/10118543/51805391-9dd40c00-2292-11e9-8a0a-8d585418723c.png',
+    favicon: 'http://kaleemelahi.co/static/kaleem-elahi.62ea94a0.png',
     og: {
-        description: "Hello! I'm Kaleem Elahi, a Front-end Engineer based out of BLR.",
+        description: "Hello! I'm Kaleem Elahi, a Front-end Engineer based out of Ahmedabad, India.",
         title: "Kaleem Elahi | Front-end Engineer",
         site_name: "Kaleem Elahi | Front-end Engineer",
         type: "website",
         url: "https://kaleemelahi.co",
         image: {
-            url: "https://user-images.githubusercontent.com/6417910/39085830-34161bd8-45a6-11e8-896b-dcfd9deccfe5.jpeg",
+            url: "http://kaleemelahi.co/static/kaleem-elahi.62ea94a0.png",
             alt: "Kaleem Elahi | Front-end Engineer",
             type: "image/jpeg",
             width: "400",
             height: "400",
         },
-        description: "Hello! I'm Kaleem Elahi, a Front-end Engineer based out of BLR.",
+        description: "Hello! I'm Kaleem Elahi, a Front-end Engineer based out of Ahmedabad, India.",
         locale: {
             main: "en_IN",
             alt: "en_US",
@@ -26,7 +26,7 @@ export const siteMeta = {
         creator: "@kaleem__elahi"
     },
     author: "Kaleem Elahi",
-    copyright: "Kaleem Elahi, Copyright (c) 2018",
+    copyright: "Kaleem Elahi, Copyright (c) 2019",
     keywords: [
         "Kaleem Elahi",
         "Kaleem Elahi Shaikh",
