@@ -6,13 +6,38 @@ import SocialLinks from '../SocialLinks';
 import '../../styles/hero.scss';
 
 import github from '../../images/social/github.svg';
+// import gitshowcase from '../../images/social/showcase.png';
 import twitter from '../../images/social/twitter.svg';
 import medium from '../../images/social/medium.svg';
 import linkedin from '../../images/social/linkedin.svg';
 import email from '../../images/social/email.svg';
+import stackOverflow from '../../images/social/stackoverflow.svg';
+import Behance from '../../images/social/behance.svg';
+import Instagram from '../../images/social/instagram.svg';
 
-const techs = ['React', 'Redux', 'jQuery', 'Firebase', 'Javscript', 'Php', 'UI/UX-Design', 'CSS3', 'HTML5', 'Next.js', 'Gatsby', 'Photoshop', 'React-Native(beginner)'];
+
+const techs = ['React', 'Redux', 'jQuery', 'Firebase', 'ES6', 'Php', 'CSS3', 'HTML5', 'Next.js', 'Gatsby', 'Photoshop', 'Adobe XD', 'Sketch', 'React-Native', 'Vue'];
 const links = [
+    {
+        href: 'https://instagram.com/kaleem__elahi',
+        title: 'Instagram',
+        image: Instagram,
+    },
+    {
+        href: 'https://www.behance.net/kaleem-elahi',
+        title: 'Behance',
+        image: Behance,
+    },
+    {
+        href: 'https://stackoverflow.com/users/story/7126465?view=Timeline',
+        title: 'StackOverflow',
+        image: stackOverflow,
+    },
+    // {
+    //     href: 'https://gitshowcase.com/kaleem-elahi',
+    //     title: 'GitShowcase',
+    //     image: gitshowcase,
+    // },
     {
         href: 'https://github.com/kaleem-elahi',
         title: 'Github',
@@ -34,7 +59,7 @@ const links = [
         image: linkedin,
     },
     {
-        href: 'mailto:sayhi@kaleemelahi.co',
+        href: 'mailto:shaikh9996@gmail.com',
         title: 'Email',
         image: email,
     }
@@ -46,15 +71,17 @@ const Hero = () => (
             <div className="img-bg"></div>
 
             <h1 className="t-bold t-mtb-15 font-header">
-                Hey! 👋 I'm Kaleem Elahi
+                {/* Hey! 👋 I'm  */}
+                Kaleem elahi
             </h1>
-            <h2 className="t-regular t-mtb-15">
+
+            {/* <h2 className="t-regular t-mtb-15">
                 <span className="color-light dev-line">
-                    Front-end Engineer |
-                    Freelancer 
-                    | UI/UX Developer
+                    <span className="left-shadow">Front-end Engineer </span>|
+                    <span>Freelancer </span>|
+                    <span className="right-shadow">UI/UX Developer</span>
                 </span>
-            </h2>
+            </h2> */}
             <h4 className="t-regular t-mtb-15">
          
             <br/>

@@ -1,6 +1,6 @@
 export const siteMeta = {
     title: 'Kaleem Elahi | Front-end Engineer',
-    favicon: 'http://kaleemelahi.co/static/kaleem-elahi.62ea94a0.png',
+    favicon: 'https://user-images.githubusercontent.com/10118543/52587993-6dc76400-2e61-11e9-803f-e66a5ce3c57d.png',
     og: {
         description: "Hello! I'm Kaleem Elahi, a Front-end Engineer based out of Ahmedabad, India.",
         title: "Kaleem Elahi | Front-end Engineer",
@@ -8,7 +8,7 @@ export const siteMeta = {
         type: "website",
         url: "https://kaleemelahi.co",
         image: {
-            url: "http://kaleemelahi.co/static/kaleem-elahi.62ea94a0.png",
+            url: "https://user-images.githubusercontent.com/10118543/52587993-6dc76400-2e61-11e9-803f-e66a5ce3c57d.png",
             alt: "Kaleem Elahi | Front-end Engineer",
             type: "image/jpeg",
             width: "400",

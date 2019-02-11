@@ -1,6 +1,6 @@
 @import './_colors.scss';
-@import url('http://fonts.googleapis.com/css?family=Zeyada');
-@import url('http://fonts.googleapis.com/css?family=Questrial');
+@import url('https://fonts.googleapis.com/css?family=Zeyada');
+@import url('https://fonts.googleapis.com/css?family=Questrial');
 
 @media screen and (max-width: 600px) {
 
@@ -15,34 +15,32 @@
 
 .font-header {
     font-size: 76px;
-    font-family: 'Zeyada',
-}
+    font-family: "Zeyada";
+    color: #FF5722;
+    text-shadow: 1px 2px #fce268;}
 
 .dev-line {
-    // background: #FFC107;
-    /* color: #ffffff; */
+    color: #000000;
     padding: 4px 10px;
-    border-radius: 50px;
+    /* border-radius: 50px; */
     /* border: 1px solid #dadada; */
     white-space: nowrap;
-    font-size: 12px;
+    /* font-size: 17px; */
     margin: auto;
 }
 
 span.tag-skills {
-    background: #e0e0e0;
-    color: #525252;
+    background: #ffffff;
+    color: #000000;
+    border: 3px solid #FFC107;
     border-radius: 4px;
     font-weight: 600;
     padding: 2px 11px;
-    box-shadow: 0px 3px 3px -2px grey;
+    box-shadow: 0px 3px 13px -2px #ffe500;
     font-size: 15px;
     /* width: 65px; */
     /* position: absolute; */
     margin: 7px 2px;
-    /* align-items: center; */
-    /* justify-content: center; */
-    /* display: flex; */
 }
 
 .center-skills {
@@ -58,7 +56,7 @@ span.tag-skills {
 .img-bg {
     height: 117px;
     width: 117px;
-    background: url('./../images/kaleem-elahi.png')  163px 177px/172%;
+    background: url('./../images/kaleem-elahi.png') 147px 145px/135%;
     border-radius: 90px;
     border: 1px dashed #ececec;
     box-shadow: 0px 0px 0px 7px #ececec;
