@@ -24,4 +24,5 @@ module.exports = {
       resolve: `gatsby-plugin-sitemap`
     }
   ],
+  pathPrefix: "/kaleem-elahi.github.io",
 }
