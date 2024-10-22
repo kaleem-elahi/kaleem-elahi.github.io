@@ -2,6 +2,11 @@
 @import url('https://fonts.googleapis.com/css?family=Zeyada');
 @import url('https://fonts.googleapis.com/css?family=Questrial');
 
+
+body {
+    background: antiquewhite;
+}
+
 @media screen and (max-width: 600px) {
 
     .center-skills {
@@ -9,15 +14,20 @@
     }
     
     .font-header {
-        font-size: 52px!important;
+        font-size: 32px!important;
     }
 }
 
 .font-header {
-    font-size: 76px;
+    font-size: 36px;
     font-family: "Zeyada";
-    color: #FF5722;
-    text-shadow: 1px 2px #fce268;}
+    color: #262329;
+    /* text-shadow: 1px 2px #68b9fc; */
+}
+
+.name-cls{
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
 
 .dev-line {
     color: #000000;
@@ -27,20 +37,26 @@
     white-space: nowrap;
     /* font-size: 17px; */
     margin: auto;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-weight: 100;
 }
 
 span.tag-skills {
     background: #ffffff;
-    color: #000000;
-    border: 3px solid #FFC107;
+    color: #a3a5a7;
+    border: 3px solid #E6E6E6;
     border-radius: 4px;
-    font-weight: 600;
+    font-weight: 500;
     padding: 2px 11px;
-    box-shadow: 0px 3px 13px -2px #ffe500;
-    font-size: 15px;
+    font-size: 18px;
     /* width: 65px; */
     /* position: absolute; */
     margin: 7px 2px;
+
+    &:hover{
+        color: rgb(33, 28, 28);
+    }
+
 }
 
 .center-skills {
@@ -51,6 +67,7 @@ span.tag-skills {
     justify-content: center;
     width: 50%;
     margin: auto;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .img-bg {
@@ -117,6 +134,11 @@ span.tag-skills {
         box-shadow: 0 2px 5px 0 $grey-shadow;
         text-align: center;
     }
+}
+
+.download-btn {
+    font-family: 'Courier New', Courier, monospace
+;
 }
 
 @media screen and (max-width: 768px) {

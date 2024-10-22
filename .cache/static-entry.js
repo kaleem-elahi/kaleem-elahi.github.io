@@ -1,224 +1,594 @@
-import React from "react"
-import { renderToString, renderToStaticMarkup } from "react-dom/server"
-import { StaticRouter, Route, withRouter } from "react-router-dom"
-import { kebabCase, get, merge, isArray, isString } from "lodash"
+const React = require(`react`)
+const path = require(`path`)
+const {
+  renderToStaticMarkup,
+  renderToPipeableStream,
+} = require(`react-dom/server`)
+const { ServerLocation, Router, isRedirect } = require(`@gatsbyjs/reach-router`)
+const merge = require(`deepmerge`)
+const { StaticQueryContext } = require(`gatsby`)
+const fs = require(`fs`)
+const { WritableAsPromise } = require(`./server-utils/writable-as-promise`)
 
-import apiRunner from "./api-runner-ssr"
-import pages from "./pages.json"
-import syncRequires from "./sync-requires"
-import testRequireError from "./test-require-error"
+const { RouteAnnouncerProps } = require(`./route-announcer-props`)
+const { apiRunner, apiRunnerAsync } = require(`./api-runner-ssr`)
+const asyncRequires = require(`$virtual/async-requires`)
+const { version: gatsbyVersion } = require(`gatsby/package.json`)
+const { grabMatchParams } = require(`./find-path`)
+const { headHandlerForSSR } = require(`./head/head-export-handler-for-ssr`)
+const {
+  SlicesResultsContext,
+  SlicesContext,
+  SlicesMapContext,
+  SlicesPropsContext,
+} = require(`./slice/context`)
+const { ServerSliceRenderer } = require(`./slice/server-slice-renderer`)
+
+// we want to force posix-style joins, so Windows doesn't produce backslashes for urls
+const { join } = path.posix
+
+const testRequireError = (moduleName, err) => {
+  const regex = new RegExp(`Error: Cannot find module\\s.${moduleName}`)
+  const firstLine = err.toString().split(`\n`)[0]
+  return regex.test(firstLine)
+}
 
 let Html
 try {
   Html = require(`../src/html`)
 } catch (err) {
-  if (testRequireError(`..\/src\/html`, err)) {
+  if (testRequireError(`../src/html`, err)) {
     Html = require(`./default-html`)
   } else {
-    console.log(
-      `\n\nThere was an error requiring "src/html.js"\n\n`,
-      err,
-      `\n\n`
-    )
-    process.exit()
+    throw err
   }
 }
 
-const pathChunkName = path => {
-  const name = path === `/` ? `index` : kebabCase(path)
-  return `path---${name}`
-}
+Html = Html && Html.__esModule ? Html.default : Html
 
-const getPage = path => pages.find(page => page.path === path)
-const defaultLayout = props => <div>{props.children()}</div>
-
-const getLayout = page => {
-  const layout = syncRequires.layouts[page.layout]
-  return layout ? layout : defaultLayout
+const getPageDataPath = path => {
+  const fixedPagePath = path === `/` ? `index` : path
+  return join(`page-data`, fixedPagePath, `page-data.json`)
 }
 
 const createElement = React.createElement
 
-module.exports = (locals, callback) => {
-  let pathPrefix = `/`
-  if (__PREFIX_PATHS__) {
-    pathPrefix = `${__PATH_PREFIX__}/`
+export const sanitizeComponents = components => {
+  const componentsArray = [].concat(components).flat(Infinity).filter(Boolean)
+
+  return componentsArray.map(component => {
+    // Ensure manifest is always loaded from content server
+    // And not asset server when an assetPrefix is used
+    if (__ASSET_PREFIX__ && component.props.rel === `manifest`) {
+      return React.cloneElement(component, {
+        href: component.props.href.replace(__ASSET_PREFIX__, ``),
+      })
+    }
+    return component
+  })
+}
+
+function deepMerge(a, b) {
+  const combineMerge = (target, source, options) => {
+    const destination = target.slice()
+
+    source.forEach((item, index) => {
+      if (typeof destination[index] === `undefined`) {
+        destination[index] = options.cloneUnlessOtherwiseSpecified(
+          item,
+          options
+        )
+      } else if (options.isMergeableObject(item)) {
+        destination[index] = merge(target[index], item, options)
+      } else if (target.indexOf(item) === -1) {
+        destination.push(item)
+      }
+    })
+    return destination
   }
 
-  let bodyHtml = ``
-  let headComponents = []
-  let htmlAttributes = {}
-  let bodyAttributes = {}
-  let preBodyComponents = []
-  let postBodyComponents = []
-  let bodyProps = {}
+  return merge(a, b, { arrayMerge: combineMerge })
+}
 
-  const replaceBodyHTMLString = body => {
-    bodyHtml = body
-  }
+/**
+Reorder headComponents so meta tags are always at the top and aren't missed by crawlers by being pushed down by large inline styles, etc.
+@see https://github.com/gatsbyjs/gatsby/issues/22206
+*/
+export const reorderHeadComponents = headComponents => {
+  const sorted = headComponents.sort((a, b) => {
+    if (a.type && a.type === `meta` && !(b.type && b.type === `meta`)) {
+      return -1
+    }
+    return 0
+  })
 
-  const setHeadComponents = components => {
-    headComponents = headComponents.concat(components)
-  }
+  return sorted
+}
 
-  const setHtmlAttributes = attributes => {
-    htmlAttributes = merge(htmlAttributes, attributes)
-  }
+const DEFAULT_CONTEXT = {
+  // whether or not we're building the site now
+  // usage in determining original build or engines
+  isDuringBuild: false,
+}
 
-  const setBodyAttributes = attributes => {
-    bodyAttributes = merge(bodyAttributes, attributes)
-  }
+export default async function staticPage({
+  pagePath,
+  pageData,
+  staticQueryContext,
+  styles,
+  scripts,
+  reversedStyles,
+  reversedScripts,
+  inlinePageData = false,
+  context = {},
+  webpackCompilationHash,
+  sliceData,
+}) {
+  const renderContext = Object.assign(DEFAULT_CONTEXT, context)
 
-  const setPreBodyComponents = components => {
-    preBodyComponents = preBodyComponents.concat(components)
-  }
+  // for this to work we need this function to be sync or at least ensure there is single execution of it at a time
+  global.unsafeBuiltinUsage = []
 
-  const setPostBodyComponents = components => {
-    postBodyComponents = postBodyComponents.concat(components)
-  }
+  try {
+    let bodyHtml = ``
+    let headComponents = [
+      <meta
+        name="generator"
+        content={`Gatsby ${gatsbyVersion}`}
+        key={`generator-${gatsbyVersion}`}
+      />,
+    ]
+    let htmlAttributes = {}
+    let bodyAttributes = {}
+    let preBodyComponents = []
+    let postBodyComponents = []
+    let bodyProps = {}
 
-  const setBodyProps = props => {
-    bodyProps = merge({}, bodyProps, props)
-  }
+    function loadPageDataSync(_pagePath) {
+      if (_pagePath === pagePath) {
+        // no need to use fs if we are asking for pageData of current page
+        return pageData
+      }
 
-  const bodyComponent = createElement(
-    StaticRouter,
-    {
-      location: {
-        pathname: locals.path,
-      },
-      context: {},
-    },
-    createElement(Route, {
-      render: routeProps => {
-        const page = getPage(routeProps.location.pathname)
-        const layout = getLayout(page)
-        return createElement(withRouter(layout), {
-          children: layoutProps => {
-            const props = layoutProps ? layoutProps : routeProps
-            return createElement(
-              syncRequires.components[page.componentChunkName],
-              {
-                ...props,
-                ...syncRequires.json[page.jsonName],
-              }
-            )
+      const pageDataPath = getPageDataPath(_pagePath)
+      const pageDataFile = join(process.cwd(), `public`, pageDataPath)
+      try {
+        // deprecation notice
+        const myErrorHolder = {
+          name: `Usage of loadPageDataSync for page other than currently generated page disables incremental html generation in future builds`,
+        }
+        Error.captureStackTrace(myErrorHolder, loadPageDataSync)
+        global.unsafeBuiltinUsage.push(myErrorHolder.stack)
+        const pageDataJson = fs.readFileSync(pageDataFile)
+        return JSON.parse(pageDataJson)
+      } catch (error) {
+        // not an error if file is not found. There's just no page data
+        return null
+      }
+    }
+
+    const replaceBodyHTMLString = body => {
+      bodyHtml = body
+    }
+
+    const setHeadComponents = components => {
+      headComponents = headComponents.concat(sanitizeComponents(components))
+    }
+
+    const setHtmlAttributes = attributes => {
+      // TODO - we should remove deep merges
+      htmlAttributes = deepMerge(htmlAttributes, attributes)
+    }
+
+    const setBodyAttributes = attributes => {
+      // TODO - we should remove deep merges
+      bodyAttributes = deepMerge(bodyAttributes, attributes)
+    }
+
+    const setPreBodyComponents = components => {
+      preBodyComponents = preBodyComponents.concat(
+        sanitizeComponents(components)
+      )
+    }
+
+    const setPostBodyComponents = components => {
+      postBodyComponents = postBodyComponents.concat(
+        sanitizeComponents(components)
+      )
+    }
+
+    const setBodyProps = props => {
+      // TODO - we should remove deep merges
+      bodyProps = deepMerge({}, bodyProps, props)
+    }
+
+    const getHeadComponents = () => headComponents
+
+    const replaceHeadComponents = components => {
+      headComponents = sanitizeComponents(components)
+    }
+
+    const getPreBodyComponents = () => preBodyComponents
+
+    const replacePreBodyComponents = components => {
+      preBodyComponents = sanitizeComponents(components)
+    }
+
+    const getPostBodyComponents = () => postBodyComponents
+
+    const replacePostBodyComponents = components => {
+      postBodyComponents = sanitizeComponents(components)
+    }
+
+    const { componentChunkName, slicesMap } = pageData
+    const pageComponent = await asyncRequires.components[componentChunkName]()
+
+    class RouteHandler extends React.Component {
+      render() {
+        const props = {
+          ...this.props,
+          ...pageData.result,
+          params: {
+            ...grabMatchParams(this.props.location.pathname),
+            ...(pageData.result?.pageContext?.__params || {}),
+          },
+        }
+
+        const pageElement = createElement(pageComponent.default, props)
+
+        const wrappedPage = apiRunner(
+          `wrapPageElement`,
+          { element: pageElement, props },
+          pageElement,
+          ({ result }) => {
+            return { element: result, props }
+          }
+        ).pop()
+
+        return wrappedPage
+      }
+    }
+
+    const routerElement = (
+      <ServerLocation url={`${__BASE_PATH__}${pagePath}`}>
+        <Router id="gatsby-focus-wrapper" baseuri={__BASE_PATH__}>
+          <RouteHandler path="/*" />
+        </Router>
+        <div {...RouteAnnouncerProps} />
+      </ServerLocation>
+    )
+
+    const sliceProps = {}
+
+    let body = apiRunner(
+      `wrapRootElement`,
+      { element: routerElement, pathname: pagePath },
+      routerElement,
+      ({ result }) => {
+        return { element: result, pathname: pagePath }
+      }
+    ).pop()
+
+    const slicesContext = {
+      // if we're in build now, we know we're on the server
+      // otherwise we're in an engine
+      renderEnvironment: renderContext.isDuringBuild ? `server` : `engines`,
+    }
+    if (process.env.GATSBY_SLICES) {
+      // if we're running in an engine, we need to manually wrap body with
+      // the results context to pass the map of slice name to component/data/context
+      if (slicesContext.renderEnvironment === `engines`) {
+        // this is the same name used in the browser
+        // since this immitates behavior
+        const slicesDb = new Map()
+
+        for (const sliceName of Object.values(slicesMap)) {
+          const slice = sliceData[sliceName]
+          const { default: SliceComponent } = await getPageChunk(slice)
+
+          const sliceObject = {
+            component: SliceComponent,
+            sliceContext: slice.result.sliceContext,
+            data: slice.result.data,
+          }
+
+          slicesDb.set(sliceName, sliceObject)
+        }
+
+        body = (
+          <SlicesResultsContext.Provider value={slicesDb}>
+            {body}
+          </SlicesResultsContext.Provider>
+        )
+      }
+
+      body = (
+        <SlicesContext.Provider value={slicesContext}>
+          <SlicesPropsContext.Provider value={sliceProps}>
+            <SlicesMapContext.Provider value={slicesMap}>
+              {body}
+            </SlicesMapContext.Provider>
+          </SlicesPropsContext.Provider>
+        </SlicesContext.Provider>
+      )
+    }
+
+    const bodyComponent = (
+      <StaticQueryContext.Provider value={staticQueryContext}>
+        {body}
+      </StaticQueryContext.Provider>
+    )
+
+    // Let the site or plugin render the page component.
+    await apiRunnerAsync(`replaceRenderer`, {
+      bodyComponent,
+      replaceBodyHTMLString,
+      setHeadComponents,
+      setHtmlAttributes,
+      setBodyAttributes,
+      setPreBodyComponents,
+      setPostBodyComponents,
+      setBodyProps,
+      pathname: pagePath,
+      pathPrefix: __PATH_PREFIX__,
+    })
+
+    // If no one stepped up, we'll handle it.
+    if (!bodyHtml) {
+      try {
+        const writableStream = new WritableAsPromise()
+        const { pipe } = renderToPipeableStream(bodyComponent, {
+          onAllReady() {
+            pipe(writableStream)
+          },
+          onError(error) {
+            writableStream.destroy(error)
           },
         })
-      },
-    })
-  )
 
-  // Let the site or plugin render the page component.
-  apiRunner(`replaceRenderer`, {
-    bodyComponent,
-    replaceBodyHTMLString,
-    setHeadComponents,
-    setHtmlAttributes,
-    setBodyAttributes,
-    setPreBodyComponents,
-    setPostBodyComponents,
-    setBodyProps,
-  })
-
-  // If no one stepped up, we'll handle it.
-  if (!bodyHtml) {
-    bodyHtml = renderToString(bodyComponent)
-  }
-
-  apiRunner(`onRenderBody`, {
-    setHeadComponents,
-    setHtmlAttributes,
-    setBodyAttributes,
-    setPreBodyComponents,
-    setPostBodyComponents,
-    setBodyProps,
-    pathname: locals.path,
-    bodyHtml,
-  })
-
-  let stats
-  try {
-    stats = require(`../public/stats.json`)
-  } catch (e) {
-    // ignore
-  }
-
-  // Create paths to scripts
-  const page = pages.find(page => page.path === locals.path)
-  const scripts = [
-    `commons`,
-    `app`,
-    pathChunkName(locals.path),
-    page.componentChunkName,
-    page.layoutComponentChunkName,
-  ]
-    .map(s => {
-      const fetchKey = `assetsByChunkName[${s}]`
-
-      let fetchedScript = get(stats, fetchKey)
-
-      if (!fetchedScript) {
-        return null
+        bodyHtml = await writableStream
+      } catch (e) {
+        // ignore @reach/router redirect errors
+        if (!isRedirect(e)) throw e
       }
+    }
 
-      // If sourcemaps are enabled, then the entry will be an array with
-      // the script name as the first entry.
-      fetchedScript = isArray(fetchedScript) ? fetchedScript[0] : fetchedScript
-      const prefixedScript = `${pathPrefix}${fetchedScript}`
-
-      // Make sure we found a component.
-      if (prefixedScript === `/`) {
-        return null
-      }
-
-      return prefixedScript
+    apiRunner(`onRenderBody`, {
+      setHeadComponents,
+      setHtmlAttributes,
+      setBodyAttributes,
+      setPreBodyComponents,
+      setPostBodyComponents,
+      setBodyProps,
+      pathname: pagePath,
+      loadPageDataSync,
+      bodyHtml,
+      scripts,
+      styles,
+      pathPrefix: __PATH_PREFIX__,
     })
-    .filter(s => isString(s))
 
-  scripts.forEach(script => {
-    // Add preload <link>s for scripts.
-    headComponents.unshift(
-      <link rel="preload" key={script} href={script} as="script" />
+    // we want to run Head after onRenderBody, so Html and Body attributes
+    // from Head wins over global ones from onRenderBody
+    headHandlerForSSR({
+      pageComponent,
+      setHeadComponents,
+      setHtmlAttributes,
+      setBodyAttributes,
+      staticQueryContext,
+      pageData,
+      pagePath,
+    })
+
+    reversedScripts.forEach(script => {
+      // Add preload/prefetch <link>s magic comments
+      if (script.shouldGenerateLink) {
+        headComponents.push(
+          <link
+            as="script"
+            rel={script.rel}
+            key={script.name}
+            href={`${__PATH_PREFIX__}/${script.name}`}
+          />
+        )
+      }
+    })
+
+    reversedStyles.forEach(style => {
+      // Add <link>s for styles that should be prefetched
+      // otherwise, inline as a <style> tag
+
+      if (style.rel === `prefetch`) {
+        headComponents.push(
+          <link
+            as="style"
+            rel={style.rel}
+            key={style.name}
+            href={`${__PATH_PREFIX__}/${style.name}`}
+          />
+        )
+      } else {
+        headComponents.unshift(
+          <style
+            data-href={`${__PATH_PREFIX__}/${style.name}`}
+            data-identity={`gatsby-global-css`}
+            dangerouslySetInnerHTML={{
+              __html: style.content,
+            }}
+          />
+        )
+      }
+    })
+
+    // Add page metadata for the current page
+    const windowPageData = `/*<![CDATA[*/window.pagePath=${JSON.stringify(
+      pagePath
+    )};${
+      process.env.GATSBY_SLICES
+        ? ``
+        : `window.___webpackCompilationHash="${webpackCompilationHash}";`
+    }${
+      inlinePageData ? `window.pageData=${JSON.stringify(pageData)};` : ``
+    }/*]]>*/`
+
+    postBodyComponents.push(
+      <script
+        key={`script-loader`}
+        id={`gatsby-script-loader`}
+        dangerouslySetInnerHTML={{
+          __html: windowPageData,
+        }}
+      />
     )
-  })
 
-  // Add the chunk-manifest at the end of body element.
-  const chunkManifest = require(`!raw!../public/chunk-manifest.json`)
-  postBodyComponents.unshift(
-    <script
-      id="webpack-manifest"
-      key="webpack-manifest"
-      dangerouslySetInnerHTML={{
-        __html: `/*<![CDATA[*/window.webpackManifest=${chunkManifest}/*]]>*/`,
-      }}
-    />
+    if (process.env.GATSBY_SLICES) {
+      postBodyComponents.push(
+        createElement(ServerSliceRenderer, {
+          sliceId: `_gatsby-scripts`,
+        })
+      )
+    } else {
+      const chunkMapping = require(`../public/chunk-map.json`)
+      // restore the old behavior
+      // Add chunk mapping metadata
+      const scriptChunkMapping = `/*<![CDATA[*/window.___chunkMapping=${JSON.stringify(
+        chunkMapping
+      )};/*]]>*/`
+
+      postBodyComponents.push(
+        <script
+          key={`chunk-mapping`}
+          id={`gatsby-chunk-mapping`}
+          dangerouslySetInnerHTML={{
+            __html: scriptChunkMapping,
+          }}
+        />
+      )
+
+      let bodyScripts = []
+      if (chunkMapping[`polyfill`]) {
+        chunkMapping[`polyfill`].forEach(script => {
+          const scriptPath = `${__PATH_PREFIX__}${script}`
+          bodyScripts.push(
+            <script key={scriptPath} src={scriptPath} noModule={true} />
+          )
+        })
+      }
+
+      // Filter out prefetched bundles as adding them as a script tag
+      // would force high priority fetching.
+      bodyScripts = bodyScripts.concat(
+        scripts
+          .filter(s => s.rel !== `prefetch`)
+          .map(s => {
+            const scriptPath = `${__PATH_PREFIX__}/${JSON.stringify(
+              s.name
+            ).slice(1, -1)}`
+            return <script key={scriptPath} src={scriptPath} async />
+          })
+      )
+
+      postBodyComponents.push(...bodyScripts)
+    }
+
+    headComponents = reorderHeadComponents(headComponents)
+
+    apiRunner(`onPreRenderHTML`, {
+      getHeadComponents,
+      replaceHeadComponents,
+      getPreBodyComponents,
+      replacePreBodyComponents,
+      getPostBodyComponents,
+      replacePostBodyComponents,
+      pathname: pagePath,
+      pathPrefix: __PATH_PREFIX__,
+    })
+
+    let htmlElement = (
+      <Html
+        {...bodyProps}
+        headComponents={headComponents}
+        htmlAttributes={htmlAttributes}
+        bodyAttributes={bodyAttributes}
+        preBodyComponents={preBodyComponents}
+        postBodyComponents={postBodyComponents}
+        body={bodyHtml}
+        path={pagePath}
+      />
+    )
+
+    if (process.env.GATSBY_SLICES) {
+      htmlElement = (
+        <SlicesContext.Provider value={slicesContext}>
+          {htmlElement}
+        </SlicesContext.Provider>
+      )
+    }
+
+    const html = `<!DOCTYPE html>${renderToStaticMarkup(htmlElement)}`
+
+    return {
+      html,
+      unsafeBuiltinsUsage: global.unsafeBuiltinUsage,
+      sliceData: sliceProps,
+    }
+  } catch (e) {
+    e.unsafeBuiltinsUsage = global.unsafeBuiltinUsage
+    throw e
+  }
+}
+
+export function getPageChunk({ componentChunkName }) {
+  return asyncRequires.components[componentChunkName]()
+}
+
+export { renderToPipeableStream } from "react-server-dom-webpack/writer.node.server"
+export { StaticQueryContext, React }
+
+export async function renderSlice({ slice, staticQueryContext, props = {} }) {
+  const { default: SliceComponent } = await getPageChunk(slice)
+
+  const slicesContext = {
+    // we are not yet supporting using <Slice /> placeholders within slice components
+    // setting this renderEnvironemnt to throw meaningful error on `<Slice />` usage
+    // `slices` renderEnvironment should be removed once we support nested `<Slice />` placeholders
+    renderEnvironment: `slices`,
+    sliceRoot: slice,
+  }
+
+  const sliceElement = (
+    <SliceComponent sliceContext={slice.context} {...props} />
   )
 
-  // Add script loader for page scripts to the end of body element (after webpack manifest).
-  // Taken from https://www.html5rocks.com/en/tutorials/speed/script-loading/
-  const scriptsString = scripts.map(s => `"${s}"`).join(`,`)
-  postBodyComponents.push(
-    <script
-      key={`script-loader`}
-      dangerouslySetInnerHTML={{
-        __html: `/*<![CDATA[*/!function(e,t,r){function n(){for(;d[0]&&"loaded"==d[0][f];)c=d.shift(),c[o]=!i.parentNode.insertBefore(c,i)}for(var s,a,c,d=[],i=e.scripts[0],o="onreadystatechange",f="readyState";s=r.shift();)a=e.createElement(t),"async"in i?(a.async=!1,e.head.appendChild(a)):i[f]?(d.push(a),a[o]=n):e.write("<"+t+' src="'+s+'" defer></'+t+">"),a.src=s}(document,"script",[${scriptsString}])/*]]>*/`,
-      }}
-    />
+  const sliceWrappedWithWrapRootElement = apiRunner(
+    `wrapRootElement`,
+    { element: sliceElement },
+    sliceElement,
+    ({ result }) => {
+      return { element: result }
+    }
+  ).pop()
+
+  const sliceWrappedWithWrapRootElementAndContexts = (
+    <SlicesContext.Provider value={slicesContext}>
+      <StaticQueryContext.Provider value={staticQueryContext}>
+        {sliceWrappedWithWrapRootElement}
+      </StaticQueryContext.Provider>
+    </SlicesContext.Provider>
   )
 
-  const html = `<!DOCTYPE html>${renderToStaticMarkup(
-    <Html
-      {...bodyProps}
-      headComponents={headComponents}
-      htmlAttributes={htmlAttributes}
-      bodyAttributes={bodyAttributes}
-      preBodyComponents={preBodyComponents}
-      postBodyComponents={postBodyComponents}
-      body={bodyHtml}
-      path={locals.path}
-    />
-  )}`
+  const writableStream = new WritableAsPromise()
+  const { pipe } = renderToPipeableStream(
+    sliceWrappedWithWrapRootElementAndContexts,
+    {
+      onAllReady() {
+        pipe(writableStream)
+      },
+      onError(error) {
+        writableStream.destroy(error)
+      },
+    }
+  )
 
-  callback(null, html)
+  return await writableStream
 }

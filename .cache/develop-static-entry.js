@@ -1,23 +1,34 @@
+/* global BROWSER_ESM_ONLY */
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { merge } from "lodash"
-import testRequireError from "./test-require-error"
-import apiRunner from "./api-runner-ssr"
+import { apiRunner } from "./api-runner-ssr"
+import asyncRequires from "$virtual/async-requires"
 
-let HTML
+const testRequireError = (moduleName, err) => {
+  const regex = new RegExp(`Error: Cannot find module\\s.${moduleName}`)
+  const firstLine = err.toString().split(`\n`)[0]
+  return regex.test(firstLine)
+}
+
+let Html
 try {
-  HTML = require(`../src/html`)
+  Html = require(`../src/html`)
 } catch (err) {
-  if (testRequireError(`..\/src\/html`, err)) {
-    HTML = require(`./default-html`)
+  if (testRequireError(`../src/html`, err)) {
+    Html = require(`./default-html`)
   } else {
     console.log(`There was an error requiring "src/html.js"\n\n`, err, `\n\n`)
     process.exit()
   }
 }
 
-module.exports = (locals, callback) => {
-  let headComponents = []
+Html = Html && Html.__esModule ? Html.default : Html
+
+export default ({ pagePath }) => {
+  let headComponents = [
+    <meta key="environment" name="note" content="environment=development" />,
+  ]
   let htmlAttributes = {}
   let bodyAttributes = {}
   let preBodyComponents = []
@@ -49,6 +60,24 @@ module.exports = (locals, callback) => {
     bodyProps = merge({}, bodyProps, props)
   }
 
+  const getHeadComponents = () => headComponents
+
+  const replaceHeadComponents = components => {
+    headComponents = components
+  }
+
+  const getPreBodyComponents = () => preBodyComponents
+
+  const replacePreBodyComponents = components => {
+    preBodyComponents = components
+  }
+
+  const getPostBodyComponents = () => postBodyComponents
+
+  const replacePostBodyComponents = components => {
+    postBodyComponents = components
+  }
+
   apiRunner(`onRenderBody`, {
     setHeadComponents,
     setHtmlAttributes,
@@ -56,21 +85,45 @@ module.exports = (locals, callback) => {
     setPreBodyComponents,
     setPostBodyComponents,
     setBodyProps,
+    pathname: pagePath,
   })
 
-  const htmlElement = React.createElement(HTML, {
+  apiRunner(`onPreRenderHTML`, {
+    getHeadComponents,
+    replaceHeadComponents,
+    getPreBodyComponents,
+    replacePreBodyComponents,
+    getPostBodyComponents,
+    replacePostBodyComponents,
+    pathname: pagePath,
+  })
+
+  const htmlElement = React.createElement(Html, {
     ...bodyProps,
     body: ``,
     headComponents: headComponents.concat([
       <script key={`io`} src="/socket.io/socket.io.js" />,
+      <link key="styles" rel="stylesheet" href="/commons.css" />,
     ]),
+    htmlAttributes,
+    bodyAttributes,
     preBodyComponents,
-    postBodyComponents: postBodyComponents.concat([
-      <script key={`commons`} src="/commons.js" />,
-    ]),
+    postBodyComponents: postBodyComponents.concat(
+      [
+        !BROWSER_ESM_ONLY && (
+          <script key={`polyfill`} src="/polyfill.js" noModule={true} />
+        ),
+        <script key={`framework`} src="/framework.js" />,
+        <script key={`commons`} src="/commons.js" />,
+      ].filter(Boolean)
+    ),
   })
   htmlStr = renderToStaticMarkup(htmlElement)
   htmlStr = `<!DOCTYPE html>${htmlStr}`
 
-  callback(null, htmlStr)
+  return htmlStr
+}
+
+export function getPageChunk({ componentChunkName }) {
+  return asyncRequires.components[componentChunkName]()
 }

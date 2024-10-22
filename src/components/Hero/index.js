@@ -29,7 +29,7 @@ const links = [
         image: Behance,
     },
     {
-        href: 'https://stackoverflow.com/users/story/7126465?view=Timeline',
+        href: 'https://stackoverflow.com/users/7126465/kaleem-elahi',
         title: 'StackOverflow',
         image: stackOverflow,
     },
@@ -68,23 +68,24 @@ const links = [
 const Hero = () => (
     <div className="hero">
         <div className="container">
+            <br/><br/>
             <div className="img-bg"></div>
 
-            <h1 className="t-bold t-mtb-15 font-header">
-                {/* Hey! 👋 I'm  */}
-                Kaleem elahi
+            <h1 className="t-bold t-mtb-15 font-header name-cls">
+            👋 Hello folks!  
+                I'm  
+                Kaleem Shaikh!
             </h1>
+            <p className=" t-mtb-12 font-header">
+A Frontend-end Engineer based out of Mumbai, India.            
+</p>
 
-            {/* <h2 className="t-regular t-mtb-15">
+            <h2 className="t-regular t-mtb-15">
                 <span className="color-light dev-line">
-                    <span className="left-shadow">Front-end Engineer </span>|
-                    <span>Freelancer </span>|
-                    <span className="right-shadow">UI/UX Developer</span>
-                </span>
-            </h2> */}
+I like exploring new things, new places, new people.                </span>
+            </h2>
             <h4 className="t-regular t-mtb-15">
          
-            <br/>
             <div className="center-skills">
             {
                 techs.map(tech => (
@@ -96,8 +97,8 @@ const Hero = () => (
 
             </h4>
 
-            <CTA type="primary" inline external to="https://github.com/kaleem-elahi/kaleem-elahi.github.io/files/2800404/Kaleem.s.Resume.7.pdf" title="Resume">
-                My Resume
+            <CTA className="download-btn" type="primary" inline external to="https://drive.google.com/file/d/1uKXqsNsTlDxr-AN356KVsW9icXmHMzry/view?usp=drive_link" title="Resume">
+                View CV
             </CTA>
             
             <hr />

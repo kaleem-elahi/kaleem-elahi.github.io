@@ -1,201 +1,324 @@
-if (__POLYFILL__) {
-  require(`core-js/fn/promise`)
-}
 import { apiRunner, apiRunnerAsync } from "./api-runner-browser"
-import React, { createElement } from "react"
-import ReactDOM from "react-dom"
-import { Router, Route, withRouter, matchPath } from "react-router-dom"
+import React from "react"
+import { Router, navigate, Location, BaseContext } from "@gatsbyjs/reach-router"
 import { ScrollContext } from "gatsby-react-router-scroll"
-import domReady from "domready"
-import { createLocation } from "history"
-import history from "./history"
-window.___history = history
+import { StaticQueryContext } from "./static-query"
+import {
+  SlicesMapContext,
+  SlicesContext,
+  SlicesResultsContext,
+} from "./slice/context"
+import {
+  shouldUpdateScroll,
+  init as navigationInit,
+  RouteUpdates,
+} from "./navigation"
 import emitter from "./emitter"
-window.___emitter = emitter
-import pages from "./pages.json"
-import redirects from "./redirects.json"
-import ComponentRenderer from "./component-renderer"
-import asyncRequires from "./async-requires"
-import loader from "./loader"
-loader.addPagesArray(pages)
-loader.addProdRequires(asyncRequires)
+import PageRenderer from "./page-renderer"
+import asyncRequires from "$virtual/async-requires"
+import {
+  setLoader,
+  ProdLoader,
+  publicLoader,
+  PageResourceStatus,
+  getStaticQueryResults,
+  getSliceResults,
+} from "./loader"
+import EnsureResources from "./ensure-resources"
+import stripPrefix from "./strip-prefix"
+
+// Generated during bootstrap
+import matchPaths from "$virtual/match-paths.json"
+import { reactDOMUtils } from "./react-dom-utils"
+
+const loader = new ProdLoader(asyncRequires, matchPaths, window.pageData)
+setLoader(loader)
+loader.setApiRunner(apiRunner)
+
+const { render, hydrate } = reactDOMUtils()
+
 window.asyncRequires = asyncRequires
-window.___loader = loader
-window.matchPath = matchPath
+window.___emitter = emitter
+window.___loader = publicLoader
 
-// Convert to a map for faster lookup in maybeRedirect()
-const redirectMap = redirects.reduce((map, redirect) => {
-  map[redirect.fromPath] = redirect
-  return map
-}, {})
+navigationInit()
 
-const maybeRedirect = pathname => {
-  const redirect = redirectMap[pathname]
+const reloadStorageKey = `gatsby-reload-compilation-hash-match`
 
-  if (redirect != null) {
-    history.replace(redirect.toPath)
-    return true
-  } else {
-    return false
-  }
-}
-
-// Check for initial page-load redirect
-maybeRedirect(window.location.pathname)
-
-// Let the site/plugins run code very early.
 apiRunnerAsync(`onClientEntry`).then(() => {
   // Let plugins register a service worker. The plugin just needs
   // to return true.
-  if (apiRunner(`registerServiceWorker`).length > 0) {
+  if (apiRunner(`registerServiceWorker`).filter(Boolean).length > 0) {
     require(`./register-service-worker`)
   }
 
-  const navigateTo = to => {
-    const location = createLocation(to, null, null, history.location)
-    let { pathname } = location
-    const redirect = redirectMap[pathname]
-
-    // If we're redirecting, just replace the passed in pathname
-    // to the one we want to redirect to.
-    if (redirect) {
-      pathname = redirect.toPath
-    }
-    const wl = window.location
-
-    // If we're already at this location, do nothing.
-    if (
-      wl.pathname === location.pathname &&
-      wl.search === location.search &&
-      wl.hash === location.hash
-    ) {
-      return
-    }
-
-    // Listen to loading events. If page resources load before
-    // a second, navigate immediately.
-    function eventHandler(e) {
-      if (e.page.path === loader.getPage(pathname).path) {
-        emitter.off(`onPostLoadPageResources`, eventHandler)
-        clearTimeout(timeoutId)
-        window.___history.push(location)
-      }
-    }
-
-    // Start a timer to wait for a second before transitioning and showing a
-    // loader in case resources aren't around yet.
-    const timeoutId = setTimeout(() => {
-      emitter.off(`onPostLoadPageResources`, eventHandler)
-      emitter.emit(`onDelayedLoadPageResources`, { pathname })
-      window.___history.push(location)
-    }, 1000)
-
-    if (loader.getResourcesForPathname(pathname)) {
-      // The resources are already loaded so off we go.
-      clearTimeout(timeoutId)
-      window.___history.push(location)
-    } else {
-      // They're not loaded yet so let's add a listener for when
-      // they finish loading.
-      emitter.on(`onPostLoadPageResources`, eventHandler)
-    }
-  }
-
-  // window.___loadScriptsForPath = loadScriptsForPath
-  window.___navigateTo = navigateTo
-
-  // Call onRouteUpdate on the initial page load.
-  apiRunner(`onRouteUpdate`, {
-    location: history.location,
-    action: history.action,
-  })
-
-  let initialAttachDone = false
-  function attachToHistory(history) {
-    if (!window.___history || initialAttachDone === false) {
-      window.___history = history
-      initialAttachDone = true
-
-      history.listen((location, action) => {
-        if (!maybeRedirect(location.pathname)) {
-          // Make sure React has had a chance to flush to DOM first.
-          setTimeout(() => {
-            apiRunner(`onRouteUpdate`, { location, action })
-          }, 0)
-        }
-      })
-    }
-  }
-
-  function shouldUpdateScroll(prevRouterProps, { location: { pathname } }) {
-    const results = apiRunner(`shouldUpdateScroll`, {
-      prevRouterProps,
-      pathname,
-    })
-    if (results.length > 0) {
-      return results[0]
-    }
-
-    if (prevRouterProps) {
-      const { location: { pathname: oldPathname } } = prevRouterProps
-      if (oldPathname === pathname) {
-        return false
-      }
-    }
-    return true
-  }
-
-  const AltRouter = apiRunner(`replaceRouterComponent`, { history })[0]
-  const DefaultRouter = ({ children }) => (
-    <Router history={history}>{children}</Router>
+  // In gatsby v2 if Router is used in page using matchPaths
+  // paths need to contain full path.
+  // For example:
+  //   - page have `/app/*` matchPath
+  //   - inside template user needs to use `/app/xyz` as path
+  // Resetting `basepath`/`baseuri` keeps current behaviour
+  // to not introduce breaking change.
+  // Remove this in v3
+  const RouteHandler = props => (
+    <BaseContext.Provider
+      value={{
+        baseuri: `/`,
+        basepath: `/`,
+      }}
+    >
+      <PageRenderer {...props} />
+    </BaseContext.Provider>
   )
 
-  const ComponentRendererWithRouter = withRouter(ComponentRenderer)
+  const DataContext = React.createContext({})
 
-  loader.getResourcesForPathname(window.location.pathname, () => {
-    const Root = () =>
-      createElement(
-        AltRouter ? AltRouter : DefaultRouter,
-        null,
-        createElement(
-          ScrollContext,
-          { shouldUpdateScroll },
-          createElement(ComponentRendererWithRouter, {
-            layout: true,
-            children: layoutProps =>
-              createElement(Route, {
-                render: routeProps => {
-                  attachToHistory(routeProps.history)
-                  const props = layoutProps ? layoutProps : routeProps
+  const slicesContext = {
+    renderEnvironment: `browser`,
+  }
 
-                  if (loader.getPage(props.location.pathname)) {
-                    return createElement(ComponentRenderer, {
-                      page: true,
-                      ...props,
-                    })
-                  } else {
-                    return createElement(ComponentRenderer, {
-                      page: true,
-                      location: { pathname: `/404.html` },
-                    })
-                  }
-                },
-              }),
-          })
-        )
+  class GatsbyRoot extends React.Component {
+    render() {
+      const { children } = this.props
+      return (
+        <Location>
+          {({ location }) => (
+            <EnsureResources location={location}>
+              {({ pageResources, location }) => {
+                const staticQueryResults = getStaticQueryResults()
+                const sliceResults = getSliceResults()
+
+                return (
+                  <StaticQueryContext.Provider value={staticQueryResults}>
+                    <SlicesContext.Provider value={slicesContext}>
+                      <SlicesResultsContext.Provider value={sliceResults}>
+                        <SlicesMapContext.Provider
+                          value={pageResources.page.slicesMap}
+                        >
+                          <DataContext.Provider
+                            value={{ pageResources, location }}
+                          >
+                            {children}
+                          </DataContext.Provider>
+                        </SlicesMapContext.Provider>
+                      </SlicesResultsContext.Provider>
+                    </SlicesContext.Provider>
+                  </StaticQueryContext.Provider>
+                )
+              }}
+            </EnsureResources>
+          )}
+        </Location>
       )
+    }
+  }
 
-    const NewRoot = apiRunner(`wrapRootComponent`, { Root }, Root)[0]
-    domReady(() =>
-      ReactDOM.render(
-        <NewRoot />,
-        typeof window !== `undefined`
-          ? document.getElementById(`___gatsby`)
-          : void 0,
-        () => {
+  class LocationHandler extends React.Component {
+    render() {
+      return (
+        <DataContext.Consumer>
+          {({ pageResources, location }) => (
+            <RouteUpdates location={location}>
+              <ScrollContext
+                location={location}
+                shouldUpdateScroll={shouldUpdateScroll}
+              >
+                <Router
+                  basepath={__BASE_PATH__}
+                  location={location}
+                  id="gatsby-focus-wrapper"
+                >
+                  <RouteHandler
+                    path={
+                      pageResources.page.path === `/404.html` ||
+                      pageResources.page.path === `/500.html`
+                        ? stripPrefix(location.pathname, __BASE_PATH__)
+                        : encodeURI(
+                            (
+                              pageResources.page.matchPath ||
+                              pageResources.page.path
+                            ).split(`?`)[0]
+                          )
+                    }
+                    {...this.props}
+                    location={location}
+                    pageResources={pageResources}
+                    {...pageResources.json}
+                  />
+                </Router>
+              </ScrollContext>
+            </RouteUpdates>
+          )}
+        </DataContext.Consumer>
+      )
+    }
+  }
+
+  const { pagePath, location: browserLoc } = window
+
+  // Explicitly call navigate if the canonical path (window.pagePath)
+  // is different to the browser path (window.location.pathname). SSR
+  // page paths might include search params, while SSG and DSG won't.
+  // If page path include search params we also compare query params.
+  // But only if NONE of the following conditions hold:
+  //
+  // - The url matches a client side route (page.matchPath)
+  // - it's a 404 page
+  // - it's the offline plugin shell (/offline-plugin-app-shell-fallback/)
+  if (
+    pagePath &&
+    __BASE_PATH__ + pagePath !==
+      browserLoc.pathname + (pagePath.includes(`?`) ? browserLoc.search : ``) &&
+    !(
+      loader.findMatchPath(stripPrefix(browserLoc.pathname, __BASE_PATH__)) ||
+      pagePath.match(/^\/(404|500)(\/?|.html)$/) ||
+      pagePath.match(/^\/offline-plugin-app-shell-fallback\/?$/)
+    )
+  ) {
+    navigate(
+      __BASE_PATH__ +
+        pagePath +
+        (!pagePath.includes(`?`) ? browserLoc.search : ``) +
+        browserLoc.hash,
+      {
+        replace: true,
+      }
+    )
+  }
+
+  // It's possible that sessionStorage can throw an exception if access is not granted, see https://github.com/gatsbyjs/gatsby/issues/34512
+  const getSessionStorage = () => {
+    try {
+      return sessionStorage
+    } catch {
+      return null
+    }
+  }
+
+  publicLoader.loadPage(browserLoc.pathname + browserLoc.search).then(page => {
+    const sessionStorage = getSessionStorage()
+
+    if (
+      page?.page?.webpackCompilationHash &&
+      page.page.webpackCompilationHash !== window.___webpackCompilationHash
+    ) {
+      // Purge plugin-offline cache
+      if (
+        `serviceWorker` in navigator &&
+        navigator.serviceWorker.controller !== null &&
+        navigator.serviceWorker.controller.state === `activated`
+      ) {
+        navigator.serviceWorker.controller.postMessage({
+          gatsbyApi: `clearPathResources`,
+        })
+      }
+
+      // We have not matching html + js (inlined `window.___webpackCompilationHash`)
+      // with our data (coming from `app-data.json` file). This can cause issues such as
+      // errors trying to load static queries (as list of static queries is inside `page-data`
+      // which might not match to currently loaded `.js` scripts).
+      // We are making attempt to reload if hashes don't match, but we also have to handle case
+      // when reload doesn't fix it (possibly broken deploy) so we don't end up in infinite reload loop
+      if (sessionStorage) {
+        const isReloaded = sessionStorage.getItem(reloadStorageKey) === `1`
+
+        if (!isReloaded) {
+          sessionStorage.setItem(reloadStorageKey, `1`)
+          window.location.reload(true)
+          return
+        }
+      }
+    }
+
+    if (sessionStorage) {
+      sessionStorage.removeItem(reloadStorageKey)
+    }
+
+    if (!page || page.status === PageResourceStatus.Error) {
+      const message = `page resources for ${browserLoc.pathname} not found. Not rendering React`
+
+      // if the chunk throws an error we want to capture the real error
+      // This should help with https://github.com/gatsbyjs/gatsby/issues/19618
+      if (page && page.error) {
+        console.error(message)
+        throw page.error
+      }
+
+      throw new Error(message)
+    }
+
+    const SiteRoot = apiRunner(
+      `wrapRootElement`,
+      { element: <LocationHandler /> },
+      <LocationHandler />,
+      ({ result }) => {
+        return { element: result }
+      }
+    ).pop()
+
+    const App = function App() {
+      const onClientEntryRanRef = React.useRef(false)
+
+      React.useEffect(() => {
+        if (!onClientEntryRanRef.current) {
+          onClientEntryRanRef.current = true
+          if (performance.mark) {
+            performance.mark(`onInitialClientRender`)
+          }
+
           apiRunner(`onInitialClientRender`)
         }
-      )
-    )
+      }, [])
+
+      return <GatsbyRoot>{SiteRoot}</GatsbyRoot>
+    }
+
+    const focusEl = document.getElementById(`gatsby-focus-wrapper`)
+
+    // Client only pages have any empty body so we just do a normal
+    // render to avoid React complaining about hydration mis-matches.
+    let defaultRenderer = render
+    if (focusEl && focusEl.children.length) {
+      defaultRenderer = hydrate
+    }
+
+    const renderer = apiRunner(
+      `replaceHydrateFunction`,
+      undefined,
+      defaultRenderer
+    )[0]
+
+    function runRender() {
+      const rootElement =
+        typeof window !== `undefined`
+          ? document.getElementById(`___gatsby`)
+          : null
+
+      renderer(<App />, rootElement)
+    }
+
+    // https://github.com/madrobby/zepto/blob/b5ed8d607f67724788ec9ff492be297f64d47dfc/src/zepto.js#L439-L450
+    // TODO remove IE 10 support
+    const doc = document
+    if (
+      doc.readyState === `complete` ||
+      (doc.readyState !== `loading` && !doc.documentElement.doScroll)
+    ) {
+      setTimeout(function () {
+        runRender()
+      }, 0)
+    } else {
+      const handler = function () {
+        doc.removeEventListener(`DOMContentLoaded`, handler, false)
+        window.removeEventListener(`load`, handler, false)
+
+        runRender()
+      }
+
+      doc.addEventListener(`DOMContentLoaded`, handler, false)
+      window.addEventListener(`load`, handler, false)
+    }
+
+    return
   })
 })
